@@ -728,6 +728,17 @@ void transpileAstInternal(Ast *ast, TranspileCtx *ctx, s64 *indent) {
         break;
     }
 
+    case AST_TERNARY: {
+        aoStrCatFmt(buf, "(");
+        transpileAstInternal(ast->cond, ctx, indent);
+        aoStrCatFmt(buf, " ? ");
+        transpileAstInternal(ast->then, ctx, indent);
+        aoStrCatFmt(buf, " : ");
+        transpileAstInternal(ast->els, ctx, indent);
+        aoStrCatFmt(buf, ")");
+        break;
+    }
+
     case AST_IF: {
         char *_if = transpileKeyWordHighlight(ctx,KW_IF);
         char *_else = transpileKeyWordHighlight(ctx,KW_ELSE);
@@ -940,6 +951,13 @@ void transpileAstInternal(Ast *ast, TranspileCtx *ctx, s64 *indent) {
         AoStr *type_cast = transpileVarDecl(ctx, ast->type,NULL);
         AoStr *lvalue = transpileLValue(ast->operand, ctx);
         aoStrCatFmt(buf, "(%S)%S", type_cast, lvalue);
+        break;
+    }
+
+    case AST_BITCAST: {
+        AoStr *type_cast = transpileVarDecl(ctx, ast->type,NULL);
+        AoStr *lvalue = transpileLValue(ast->operand, ctx);
+        aoStrCatFmt(buf, "(*(%S*)&(%S))", type_cast, lvalue);
         break;
     }
 

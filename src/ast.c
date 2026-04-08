@@ -429,6 +429,16 @@ Ast *astIf(Ast *cond, Ast *then, Ast *els) {
     return ast;
 }
 
+Ast *astTernary(AstType *type, Ast *cond, Ast *then, Ast *els) {
+    Ast *ast = astNew();
+    ast->type = type;
+    ast->kind = AST_TERNARY;
+    ast->cond = cond;
+    ast->then = then;
+    ast->els = els;
+    return ast;
+}
+
 /* Sort the cases from low to high */
 static void astJumpTableSort(Ast **cases, int high, int low) {
     if (low < high) {
@@ -750,6 +760,14 @@ Ast *astGlobalCmdArgs(void) {
 Ast *astCast(Ast *var, AstType *to) {
     Ast *ast = astNew();
     ast->kind = AST_CAST;
+    ast->operand = var;
+    ast->type = to;
+    return ast;
+}
+
+Ast *astBitcast(Ast *var, AstType *to) {
+    Ast *ast = astNew();
+    ast->kind = AST_BITCAST;
     ast->operand = var;
     ast->type = to;
     return ast;
@@ -1765,6 +1783,13 @@ void _astToString(AoStr *str, Ast *ast, int depth) {
                     astTypeToString(ast->type));
             break;
 
+        case AST_BITCAST:
+            aoStrCatPrintf(str, "<bitcast> %s %s -> %s\n",
+                    astTypeToString(ast->operand->type),
+                    astLValueToString(ast->operand,0),
+                    astTypeToString(ast->type));
+            break;
+
         case AST_JUMP:
             aoStrCatPrintf(str, "<jump> %s\n", ast->jump_label->data);
             break;
@@ -1856,6 +1881,17 @@ void _astToString(AoStr *str, Ast *ast, int depth) {
             break;
         }
 
+        case AST_TERNARY: {
+            aoStrCatPrintf(str, "(");
+            _astToString(str, ast->cond, depth);
+            aoStrCatPrintf(str, " ? ");
+            _astToString(str, ast->then, depth);
+            aoStrCatPrintf(str, " : ");
+            _astToString(str, ast->els, depth);
+            aoStrCatPrintf(str, ")");
+            break;
+        }
+
         case AST_PLACEHOLDER: {
             aoStrCatPrintf(str, "<placeholder>\n");
             break;
@@ -1917,6 +1953,7 @@ char *astKindToString(AstKind kind) {
         case AST_VAR_ARGS:      return "AST_VAR_ARGS";
         case AST_ASM_FUNCDEF:   return "AST_ASM_FUNCDEF";
         case AST_CAST:          return "AST_CAST";
+        case AST_BITCAST:       return "AST_BITCAST";
         case AST_FUN_PROTO:     return "AST_FUN_PROTO";
         case AST_CASE:          return "AST_CASE";
         case AST_JUMP:          return "AST_JUMP";
@@ -1929,6 +1966,8 @@ char *astKindToString(AstKind kind) {
         case AST_COMMENT:       return "AST_COMMENT";
         case AST_BINOP:         return "AST_BINOP";
         case AST_UNOP:          return "AST_UNOP";
+            break;
+        case AST_TERNARY:       return "AST_TERNARY";
             break;
     }
     loggerPanic("Cannot find kind: %d\n", kind);
@@ -2163,6 +2202,14 @@ static void _astLValueToString(AoStr *str, Ast *ast, u64 lexeme_flags) {
             break;
         }
 
+        case AST_BITCAST: {
+            char *type = astTypeToString(ast->type);
+            aoStrCatPrintf(str, "bitcast<%s>(", type);
+            _astLValueToString(str,ast->operand,lexeme_flags);
+            aoStrCatPrintf(str, ")");
+            break;
+        }
+
         case AST_RETURN:
             aoStrCatPrintf(str, "return ");
             _astLValueToString(str,ast->retval, lexeme_flags);
@@ -2331,6 +2378,7 @@ const char *astKindToHumanReadable(Ast *ast) {
         case AST_VAR_ARGS: return "variadic arguments";
         case AST_ASM_FUNCDEF: return "assembly function definition";
         case AST_CAST: return "type cast";
+        case AST_BITCAST: return "bitcast";
         case AST_SWITCH: return "switch statement";
         case AST_CASE: return "case statement";
         case AST_DEFAULT: return "default statement";
@@ -2339,6 +2387,7 @@ const char *astKindToHumanReadable(Ast *ast) {
         case AST_PLACEHOLDER: return "placeholder";
         case AST_BINOP: return "binary op";
         case AST_UNOP: return "unary op";
+        case AST_TERNARY: return "ternary expression";
         default: return "unknown AST kind";
     }
 }

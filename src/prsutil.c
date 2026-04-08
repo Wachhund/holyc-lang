@@ -455,6 +455,7 @@ int assertLValue(Ast *ast) {
         case AST_FUNPTR:
         case AST_DEFAULT_PARAM:
         case AST_CAST:
+        case AST_BITCAST:
         case AST_UNOP:
             return 1;
 

@@ -400,6 +400,17 @@ void asmTypeCast(Cctrl *cc, AoStr *buf, Ast *ast) {
     asmCast(buf,ast->operand->type,ast->type);
 }
 
+void asmBitcast(Cctrl *cc, AoStr *buf, Ast *ast) {
+    asmExpression(cc,buf,ast->operand);
+    AstType *from = ast->operand->type;
+    AstType *to = ast->type;
+    if (!astIsFloatType(from) && to->kind == AST_TYPE_FLOAT) {
+        aoStrCatPrintf(buf, "movq    %%rax, %%xmm0\n\t");
+    } else if (from->kind == AST_TYPE_FLOAT && !astIsFloatType(to)) {
+        aoStrCatPrintf(buf, "movq    %%xmm0, %%rax\n\t");
+    }
+}
+
 void asmAssignDerefInternal(AoStr *buf, AstType *type, int offset) {
     char *reg,*mov;
     aoStrCatPrintf(buf, "# ASSIGN DREF INTERNAL START: %s\n\t",
@@ -658,6 +669,11 @@ void asmAssign(Cctrl *cc, AoStr *buf, Ast *variable) {
             asmAssign(cc,buf,variable->operand);
             break;
 
+        case AST_BITCAST:
+            variable->operand->type = astTypeCopy(variable->type);
+            asmAssign(cc,buf,variable->operand);
+            break;
+
         case AST_UNOP: {
             if (astIsDeref(variable)) {
                 asmAssignDeref(cc, buf, variable);
@@ -818,9 +834,33 @@ void asmAddr(Cctrl *cc, AoStr *buf, Ast *ast) {
         case AST_CLASS_REF: {
             if (astIsDeref(ast->operand->cls) &&
                     ast->operand->cls->operand->kind) {
-                Ast *lvar = ast->operand->cls->operand;
-                aoStrCatPrintf(buf, "movq   %d(%%rbp), %%rax\n\t", lvar->loff);
+                /* &(ptr->field): load pointer, add field offset */
+                Ast *deref_operand = ast->operand->cls->operand;
+                if (deref_operand->kind == AST_GVAR) {
+                    aoStrCatPrintf(buf, "movq   %s(%%rip), %%rax\n\t",
+                            deref_operand->glabel->data);
+                } else {
+                    aoStrCatPrintf(buf, "movq   %d(%%rbp), %%rax\n\t",
+                            deref_operand->loff);
+                }
                 aoStrCatPrintf(buf,"addq   $%d, %%rax\n\t",ast->operand->type->offset);
+            } else if (ast->operand->cls->kind == AST_LVAR) {
+                /* &(local_struct.field): compute stack addr + field offset */
+                int addr = ast->operand->cls->loff + ast->operand->type->offset;
+                aoStrCatPrintf(buf, "leaq   %d(%%rbp), %%rax\n\t", addr);
+            } else if (ast->operand->cls->kind == AST_GVAR) {
+                /* &(global_struct.field): compute global addr + field offset */
+                aoStrCatPrintf(buf, "leaq   %s(%%rip), %%rax\n\t",
+                        ast->operand->cls->glabel->data);
+                if (ast->operand->type->offset) {
+                    aoStrCatPrintf(buf, "addq   $%d, %%rax\n\t",
+                            ast->operand->type->offset);
+                }
+            } else if (ast->operand->cls->kind == AST_CLASS_REF) {
+                /* &(nested.inner.field): recurse into class ref */
+                asmExpression(cc, buf, ast->operand->cls);
+                aoStrCatPrintf(buf, "addq   $%d, %%rax\n\t",
+                        ast->operand->type->offset);
             } else {
                 loggerPanic("Cannot produce ASM for: %s %s %s\n",
                     astKindToString(ast->operand->cls->kind),
@@ -1760,10 +1800,6 @@ void asmPrepFuncCallArgs(Cctrl *cc, AoStr *buf, Ast *funcall) {
         asmCall(buf, funcall->fname->data);
     }
 
-    if (float_cnt) {
-        aoStrCatPrintf(buf, "movl   $%d, %%eax\n\t", float_cnt);
-    }
-
     if (stack_cnt) {
         stack_pointer -= stack_cnt;
         if (needs_padding) {
@@ -2001,6 +2037,10 @@ void asmExpression(Cctrl *cc, AoStr *buf, Ast *ast) {
         asmTypeCast(cc,buf,ast);
         break;
 
+    case AST_BITCAST:
+        asmBitcast(cc,buf,ast);
+        break;
+
     case AST_IF: {
         asmExpression(cc,buf,ast->cond);
         label_begin = astMakeLabel();
@@ -2022,6 +2062,25 @@ void asmExpression(Cctrl *cc, AoStr *buf, Ast *ast) {
             asmRemovePreviousTab(buf);
             aoStrCatPrintf(buf, "%s:\n\t", label_begin->data);
         }
+        break;
+    }
+
+    case AST_TERNARY: {
+        asmExpression(cc,buf,ast->cond);
+        label_begin = astMakeLabel();
+        label_end = astMakeLabel();
+        aoStrCatPrintf(buf,
+                "test   %%rax, %%rax\n\t"
+                "je     %s\n\t", label_begin->data);
+        asmExpression(cc,buf,ast->then);
+        aoStrCatPrintf(buf,
+                "jmp    %s\n"
+                "%s:\n\t",
+                label_end->data,
+                label_begin->data);
+        asmExpression(cc,buf,ast->els);
+        asmRemovePreviousTab(buf);
+        aoStrCatPrintf(buf, "%s:\n\t", label_end->data);
         break;
     }
 

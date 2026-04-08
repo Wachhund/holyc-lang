@@ -788,18 +788,21 @@ static int parseGetPriority(Lexeme *tok) {
     case TK_OR_OR:
         return 13;
 
-    case '=':
-    case TK_ADD_EQU: 
-    case TK_SUB_EQU: 
-    case TK_MUL_EQU: 
-    case TK_DIV_EQU: 
-    case TK_MOD_EQU: 
-    case TK_AND_EQU: 
-    case TK_OR_EQU:  
-    case TK_XOR_EQU: 
-    case TK_SHL_EQU: 
-    case TK_SHR_EQU:
+    case '?':
         return 14;
+
+    case '=':
+    case TK_ADD_EQU:
+    case TK_SUB_EQU:
+    case TK_MUL_EQU:
+    case TK_DIV_EQU:
+    case TK_MOD_EQU:
+    case TK_AND_EQU:
+    case TK_OR_EQU:
+    case TK_XOR_EQU:
+    case TK_SHL_EQU:
+    case TK_SHR_EQU:
+        return 15;
 
     default:
         return -1;
@@ -983,6 +986,18 @@ Ast *parseExpr(Cctrl *cc, int prec) {
             continue;
         }
 
+        /* Ternary operator: cond ? then : else */
+        if (tokenPunctIs(tok, '?')) {
+            Ast *then_expr = parseExpr(cc, 16);
+            cctrlTokenExpect(cc, ':');
+            Ast *else_expr = parseExpr(cc, 14);
+            AstType *result_type = then_expr->type;
+            if (!result_type) result_type = else_expr->type;
+            if (!result_type) result_type = ast_int_type;
+            LHS = astTernary(result_type, LHS, then_expr, else_expr);
+            continue;
+        }
+
         AstBinOp deconstructed_compound_op;
         compound_assign = parseCompoundAssign(tok, &deconstructed_compound_op);
         if (tokenPunctIs(tok, '=') || compound_assign) {
@@ -1054,6 +1069,28 @@ static Ast *parseCast(Cctrl *cc) {
     ast = parseExpr(cc,16);
     cctrlTokenExpect(cc,')');
     ast = astCast(ast,cast_type);
+    return ast;
+}
+
+static Ast *parseBitcast(Cctrl *cc) {
+    Ast *ast;
+    AstType *cast_type;
+
+    cctrlTokenExpect(cc,'<');
+    cast_type = parseDeclSpec(cc);
+    cctrlTokenExpect(cc,'>');
+    cctrlTokenExpect(cc,'(');
+    ast = parseExpr(cc,16);
+    cctrlTokenExpect(cc,')');
+
+    if (ast->type && cast_type->size != ast->type->size) {
+        cctrlRaiseException(cc,
+            "bitcast requires source and target types of equal size "
+            "(source: %d bytes, target: %d bytes)",
+            ast->type->size, cast_type->size);
+    }
+
+    ast = astBitcast(ast,cast_type);
     return ast;
 }
 
@@ -1180,7 +1217,8 @@ Ast *parseUnaryExpr(Cctrl *cc) {
     if (tok->tk_type == TK_KEYWORD) {
         switch (tok->i64) {
             case KW_SIZEOF: return parseSizeof(cc);
-            case KW_CAST:   return parseCast(cc);
+            case KW_CAST:    return parseCast(cc);
+            case KW_BITCAST: return parseBitcast(cc);
             case KW_DEFINED: {
                 cctrlTokenExpect(cc,'(');
                 tok = cctrlTokenGet(cc);

@@ -1384,7 +1384,8 @@ Ast *parseStatement(Cctrl *cc) {
              * It is possible to do: 
              * cast<Obj *>(_ptr)->x = 10;
              * */
-            case KW_CAST: {
+            case KW_CAST:
+            case KW_BITCAST: {
                 cctrlTokenRewind(cc);
                 ast = parseExpr(cc,16);
                 tok = cctrlTokenGet(cc);
@@ -1612,8 +1613,27 @@ Ast *parseFunctionDef(Cctrl *cc, AstType *rettype,
                 cctrlRaiseException(cc,"Cannot redefine asm function: %.*s",
                         len,fname);
 
-            case AST_FUN_PROTO:
-                /* upgrade prototype to a function */
+            case AST_FUN_PROTO: {
+                /* upgrade prototype to a function, merging default
+                 * parameter values from the prototype into the
+                 * definition's parameter list */
+                Vec *proto_params = func->params;
+                if (proto_params && params) {
+                    u64 merge_len = proto_params->size;
+                    if (params->size < merge_len) {
+                        merge_len = params->size;
+                    }
+                    for (u64 pi = 0; pi < merge_len; pi++) {
+                        Ast *pp = proto_params->entries[pi];
+                        Ast *dp = params->entries[pi];
+                        if (pp && dp &&
+                            pp->kind == AST_DEFAULT_PARAM &&
+                            dp->kind != AST_DEFAULT_PARAM) {
+                            params->entries[pi] = astFunctionDefaultParam(
+                                    dp, pp->declinit);
+                        }
+                    }
+                }
                 func->locals = cc->tmp_locals;
                 func->params = params;
                 cc->tmp_params = func->params;
@@ -1621,6 +1641,7 @@ Ast *parseFunctionDef(Cctrl *cc, AstType *rettype,
                 fn_type = func->type;
                 func->kind = AST_FUNC;
                 break;
+            }
 
             default:
                 cctrlRaiseException(cc,"Unexpected function: %.*s -> %s",
