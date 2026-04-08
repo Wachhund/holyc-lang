@@ -103,12 +103,24 @@ _MEMSET::
 
 _MEMCPY::
     PUSHQ  RBP
-    MOV    RBP, RSP 
-    MOVQ   RCX, RDX 
+    MOV    RBP, RSP
+    MOVQ   RCX, RDX
     CLD
     REP    MOVSB
     LEAVE
-    RET 
+    RET
+
+}
+
+/* Bit-reinterpret I64 as F64 (movq, no cvtsi2sd).
+ * Defined in separate asm block so the label matches the HolyC name. */
+asm {
+I64AsF64::
+    PUSHQ  RBP
+    MOVQ   RBP, RSP
+    MOVQ   XMM0, RDI
+    LEAVE
+    RET
 }
 
 public extern "c" U0 *memchr(U0 *__s, I32 __c, U64 __n);
@@ -125,3 +137,4 @@ public _extern _CALLOC U0 *CAlloc(U64 new_size);
 public _extern _MSIZE U64 MSize(U0 *ptr);
 public _extern _MEMCPY U0 *MemCpy(U0 *dst, U0 *src, U64 len);
 public _extern _MEMSET U0 *MemSet(U0 *dst, I32 ch, U64 len);
+public _extern I64AsF64 F64 I64AsF64(I64 bits);

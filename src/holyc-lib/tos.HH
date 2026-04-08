@@ -31,6 +31,8 @@
 #define I8_MAX  0x7F
 #define I8_MIN  0xFFFFFF80
 
+public _extern I64AsF64 F64 I64AsF64(I64 bits);
+
 public class List;
 public class List
 {
@@ -949,6 +951,25 @@ public Bool JsonIsString(Json *j);
 public Bool JsonIsInt(Json *j);
 public Bool JsonIsFloat(Json *j);
 public Json *JsonSelect(Json *j, U8 *fmt, ...);
+
+public Json *JsonNew();
+public Json *JsonCreateObject();
+public Json *JsonCreateArray();
+public Json *JsonObjectSetString(Json *obj, U8 *key, U8 *value);
+public Json *JsonObjectSetInt(Json *obj, U8 *key, I64 value);
+public Json *JsonObjectSetFloat(Json *obj, U8 *key, F64 value);
+public Json *JsonObjectSetBool(Json *obj, U8 *key, Bool value);
+public Json *JsonObjectSetNull(Json *obj, U8 *key);
+public Json *JsonObjectSetObject(Json *obj, U8 *key, Json *child);
+public Json *JsonObjectSetArray(Json *obj, U8 *key, Json *child);
+public Json *JsonArrayAddString(Json *arr, U8 *value);
+public Json *JsonArrayAddInt(Json *arr, I64 value);
+public Json *JsonArrayAddFloat(Json *arr, F64 value);
+public Json *JsonArrayAddBool(Json *arr, Bool value);
+public Json *JsonArrayAddNull(Json *arr);
+public Json *JsonArrayAddObject(Json *arr, Json *child);
+public Json *JsonArrayAddArray(Json *arr, Json *child);
+public U8 *JsonToPrettyString(Json *json, I64 indent=2);
 
 #ifdef __HCC_LINK_SQLITE3__ 
 

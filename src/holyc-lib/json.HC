@@ -95,7 +95,7 @@ class JsonStringBuilder
 public U8 *JsonToString(Json *j);
 Bool JsonParseValue(JsonParser *p);
 
-static Json *JsonNew()
+public Json *JsonNew()
 {
   Json *J = MAlloc(sizeof(Json));
   J->type = JSON_NULL;
@@ -500,12 +500,12 @@ static U0 JsonToStringInternal(Json *J, JsonStringBuilder *js)
         break;
       case JSON_ARRAY:
         js->buf = CatLenPrint(js->buf,&js->len,"[");
-        JsonToStringInternal(J->array,js);
+        if (J->array) JsonToStringInternal(J->array,js);
         js->buf = CatLenPrint(js->buf,&js->len,"]");
         break;
       case JSON_OBJECT:
         js->buf = CatLenPrint(js->buf,&js->len,"{");
-        JsonToStringInternal(J->object,js);
+        if (J->object) JsonToStringInternal(J->object,js);
         js->buf = CatLenPrint(js->buf,&js->len,"}");
         break;
       case JSON_BOOL:

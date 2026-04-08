@@ -725,6 +725,7 @@ U8 *StrPrintJoin(U8 *_dst, U8 *fmt,I64 argc,I64 *argv)
       dec_len = -1;
       if (*fmt == '.') {
         fmt++;
+        dec_len = 0;
         while ('0'<=*fmt<='9') {
           dec_len = dec_len * 10 + *fmt++ -'0';
         }
@@ -767,64 +768,17 @@ U8 *StrPrintJoin(U8 *_dst, U8 *fmt,I64 argc,I64 *argv)
           break;
         }
 
-        /* Presently there is only F64 */
+        /* F64 formatting via I64AsF64 bit-reinterpretation */
         case 'f': {
-          "Floats not supported\n";
-          Exit(1);
-          F64 n;
-          U64 m;
-          I64 k = 0, idx = 0;
-          farg = argv[sp++](F64); // XXX: this should require a cast?
-          if (farg < 0) {
-            flags |= PRTF_NEG;
-            farg=-farg;
-          }
-
-          if (dec_len < 0) {
-            dec_len = 0;
-          }
-          idx = dec_len;
-          // F64 m;
-          n = log10(farg);
-
-          if (n > 17) {
-            n -= 17;
-            farg *=pow(10.0,-n);
+          farg = I64AsF64(argv[sp++]);
+          I64 flen;
+          if (dec_len >= 0 && (flags & PRTF_DECIMAL)) {
+            flen = snprintf(buf, sizeof(buf), "%.*f", dec_len, farg);
           } else {
-            n = 0;
+            flen = snprintf(buf, sizeof(buf), "%f", farg);
           }
-          m = round(farg)(U64);
-          if (dec_len) {
-            buf[k++]='.';
-          }
-
-          while (idx-- && k < sizeof(buf)-8) {
-            if (n) {
-              n--;
-              buf[k++] = '0';
-            } else {
-              buf[k++]= (m % 10) + '0';
-            }
-          }
-          if (dec_len) {
-            buf[k++] = '.';
-          }
-
-          do {
-            if (n) {
-              n--;
-              buf[k++] = '0';
-            } else {
-              buf[k++] = (m % 10) + '0';
-            }
-          } while (k<sizeof(buf)-8);
-
-          if (flags & PRTF_NEG) {
-            SPutChar(&ptr,'-',&dst);
-          }
-          for (I64 i = k-1;i>=0;--i) {
-            SPutChar(&ptr,buf[i],&dst);
-          }
+          buf[flen] = '\0';
+          OutStr(buf, &dst, &ptr, tlen, flags);
           break;
         }
 
