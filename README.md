@@ -262,6 +262,18 @@ main(void)
 }
 ```
 
+## Editor Support
+Syntax highlighting configurations are available in `src/syntax-highlighting/`:
+
+| Editor | File | Installation |
+|--------|------|-------------|
+| **Vim** | `hc.vim` | Copy to `~/.vim/syntax/hc.vim` and add `autocmd BufRead,BufNewFile *.HC,*.HH set syntax=hc` to `~/.vimrc` |
+| **nano** | `holyc.nanorc` | Copy to `~/.nano/` and add `include "~/.nano/holyc.nanorc"` to `~/.nanorc` |
+| **VS Code / Sublime Text** | `holyc.tmLanguage.json` | Place in a VS Code extension under `syntaxes/` or use a TextMate bundle for Sublime Text |
+| **Emacs** | `holyc-mode.el` | Add to your `load-path` and `(require 'holyc-mode)` in your init file |
+
+All configurations highlight HolyC types, keywords, preprocessor directives, strings, comments, numeric literals and inline assembly blocks. Files with `.HC` and `.HH` extensions are automatically recognized.
+
 ## Bugs
 Please open an issue on [github](https://github.com/Jamesbarford/holyc-lang/issues)
 
