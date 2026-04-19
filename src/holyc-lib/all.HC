@@ -15,7 +15,8 @@
 #include "./dir.HC"
 #include "./fzf.HC"
 #include "./json.HC"
+#include "./json-builder.HC"
 #include "./net.HC"
-#ifdef __HCC_LINK_SQLITE3__ 
+#ifdef __HCC_LINK_SQLITE3__
   #include "./sqllite.HC"
 #endif
