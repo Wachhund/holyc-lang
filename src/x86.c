@@ -400,6 +400,17 @@ void asmTypeCast(Cctrl *cc, AoStr *buf, Ast *ast) {
     asmCast(buf,ast->operand->type,ast->type);
 }
 
+void asmBitcast(Cctrl *cc, AoStr *buf, Ast *ast) {
+    asmExpression(cc,buf,ast->operand);
+    AstType *from = ast->operand->type;
+    AstType *to = ast->type;
+    if (!astIsFloatType(from) && to->kind == AST_TYPE_FLOAT) {
+        aoStrCatPrintf(buf, "movq    %%rax, %%xmm0\n\t");
+    } else if (from->kind == AST_TYPE_FLOAT && !astIsFloatType(to)) {
+        aoStrCatPrintf(buf, "movq    %%xmm0, %%rax\n\t");
+    }
+}
+
 void asmAssignDerefInternal(AoStr *buf, AstType *type, int offset) {
     char *reg,*mov;
     aoStrCatPrintf(buf, "# ASSIGN DREF INTERNAL START: %s\n\t",
@@ -654,6 +665,11 @@ void asmAssign(Cctrl *cc, AoStr *buf, Ast *variable) {
     switch (variable->kind) {
         case AST_CAST:
             asmCast(buf,variable->operand->type,variable->type);
+            variable->operand->type = astTypeCopy(variable->type);
+            asmAssign(cc,buf,variable->operand);
+            break;
+
+        case AST_BITCAST:
             variable->operand->type = astTypeCopy(variable->type);
             asmAssign(cc,buf,variable->operand);
             break;
@@ -1999,6 +2015,10 @@ void asmExpression(Cctrl *cc, AoStr *buf, Ast *ast) {
 
     case AST_CAST:
         asmTypeCast(cc,buf,ast);
+        break;
+
+    case AST_BITCAST:
+        asmBitcast(cc,buf,ast);
         break;
 
     case AST_IF: {

@@ -1384,7 +1384,8 @@ Ast *parseStatement(Cctrl *cc) {
              * It is possible to do: 
              * cast<Obj *>(_ptr)->x = 10;
              * */
-            case KW_CAST: {
+            case KW_CAST:
+            case KW_BITCAST: {
                 cctrlTokenRewind(cc);
                 ast = parseExpr(cc,16);
                 tok = cctrlTokenGet(cc);

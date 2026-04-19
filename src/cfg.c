@@ -1057,6 +1057,7 @@ static void cfgHandleAstNode(CFGBuilder *builder, Ast *ast) {
         case AST_ASM_FUNC_BIND:
         case AST_ASM_STMT:
         case AST_CAST:
+        case AST_BITCAST:
         case AST_CLASS_REF:
         case AST_DEFAULT_PARAM:
         case AST_EXTERN_FUNC:

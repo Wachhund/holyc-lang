@@ -1057,6 +1057,28 @@ static Ast *parseCast(Cctrl *cc) {
     return ast;
 }
 
+static Ast *parseBitcast(Cctrl *cc) {
+    Ast *ast;
+    AstType *cast_type;
+
+    cctrlTokenExpect(cc,'<');
+    cast_type = parseDeclSpec(cc);
+    cctrlTokenExpect(cc,'>');
+    cctrlTokenExpect(cc,'(');
+    ast = parseExpr(cc,16);
+    cctrlTokenExpect(cc,')');
+
+    if (ast->type && cast_type->size != ast->type->size) {
+        cctrlRaiseException(cc,
+            "bitcast requires source and target types of equal size "
+            "(source: %d bytes, target: %d bytes)",
+            ast->type->size, cast_type->size);
+    }
+
+    ast = astBitcast(ast,cast_type);
+    return ast;
+}
+
 Ast *parseSizeof(Cctrl *cc) {
     Lexeme *tok = cctrlTokenGet(cc);
     Lexeme *peek = cctrlTokenPeek(cc);
@@ -1181,6 +1203,7 @@ Ast *parseUnaryExpr(Cctrl *cc) {
         switch (tok->i64) {
             case KW_SIZEOF: return parseSizeof(cc);
             case KW_CAST:   return parseCast(cc);
+            case KW_BITCAST: return parseBitcast(cc);
             case KW_DEFINED: {
                 cctrlTokenExpect(cc,'(');
                 tok = cctrlTokenGet(cc);

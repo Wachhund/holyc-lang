@@ -158,6 +158,7 @@ static LexerType lexer_types[] = {
     {"#include", KW_PP_INCLUDE},
 
     {"cast",     KW_CAST},
+    {"bitcast",  KW_BITCAST},
     {"sizeof",   KW_SIZEOF},
     {"inline",   KW_INLINE},
     {"atomic",   KW_ATOMIC},
@@ -468,6 +469,7 @@ AoStr *lexemeToAoStr(Lexeme *tok) {
                 case KW_DEFINE:      aoStrCatPrintf(str,"define");  break;
                 case KW_PP_INCLUDE:     aoStrCatPrintf(str,"include"); break;
                 case KW_CAST:        aoStrCatPrintf(str,"cast"); break;
+                case KW_BITCAST:     aoStrCatPrintf(str,"bitcast"); break;
                 case KW_SIZEOF:      aoStrCatPrintf(str,"sizeof");  break;
                 case KW_RETURN:      aoStrCatPrintf(str,"return");  break;
                 case KW_SWITCH:      aoStrCatPrintf(str,"switch");  break;

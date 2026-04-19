@@ -121,6 +121,7 @@
 #define KW_PP_DEFINED   77
 #define KW_PP_UNDEF     78
 #define KW_PP_ERROR     79
+#define KW_BITCAST      80
 
 /* Compiler Flags*/
 #define CCF_MULTI_CHAR_OP     (1<<0)

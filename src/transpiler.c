@@ -943,6 +943,13 @@ void transpileAstInternal(Ast *ast, TranspileCtx *ctx, s64 *indent) {
         break;
     }
 
+    case AST_BITCAST: {
+        AoStr *type_cast = transpileVarDecl(ctx, ast->type,NULL);
+        AoStr *lvalue = transpileLValue(ast->operand, ctx);
+        aoStrCatFmt(buf, "(*(%S*)&(%S))", type_cast, lvalue);
+        break;
+    }
+
     case AST_SWITCH: {
         char *_switch = transpileKeyWordHighlight(ctx, KW_SWITCH);
         aoStrCatFmt(buf, "%s (", _switch);

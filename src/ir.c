@@ -757,6 +757,7 @@ IrValue *irExpr(IrCtx *ctx, Ast *ast) {
         case AST_VAR_ARGS:
         case AST_ASM_FUNCDEF:
         case AST_CAST:
+        case AST_BITCAST:
         case AST_FUN_PROTO:
         case AST_CASE:
         case AST_JUMP:
@@ -869,6 +870,7 @@ void irLowerAst(IrCtx *ctx, Ast *ast) {
         case AST_VAR_ARGS:
         case AST_ASM_FUNCDEF:
         case AST_CAST:
+        case AST_BITCAST:
         case AST_FUN_PROTO:
         case AST_CASE:
         case AST_JUMP:
