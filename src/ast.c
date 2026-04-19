@@ -429,6 +429,16 @@ Ast *astIf(Ast *cond, Ast *then, Ast *els) {
     return ast;
 }
 
+Ast *astTernary(AstType *type, Ast *cond, Ast *then, Ast *els) {
+    Ast *ast = astNew();
+    ast->type = type;
+    ast->kind = AST_TERNARY;
+    ast->cond = cond;
+    ast->then = then;
+    ast->els = els;
+    return ast;
+}
+
 /* Sort the cases from low to high */
 static void astJumpTableSort(Ast **cases, int high, int low) {
     if (low < high) {
@@ -1856,6 +1866,17 @@ void _astToString(AoStr *str, Ast *ast, int depth) {
             break;
         }
 
+        case AST_TERNARY: {
+            aoStrCatPrintf(str, "(");
+            _astToString(str, ast->cond, depth);
+            aoStrCatPrintf(str, " ? ");
+            _astToString(str, ast->then, depth);
+            aoStrCatPrintf(str, " : ");
+            _astToString(str, ast->els, depth);
+            aoStrCatPrintf(str, ")");
+            break;
+        }
+
         case AST_PLACEHOLDER: {
             aoStrCatPrintf(str, "<placeholder>\n");
             break;
@@ -1929,6 +1950,7 @@ char *astKindToString(AstKind kind) {
         case AST_COMMENT:       return "AST_COMMENT";
         case AST_BINOP:         return "AST_BINOP";
         case AST_UNOP:          return "AST_UNOP";
+        case AST_TERNARY:       return "AST_TERNARY";
             break;
     }
     loggerPanic("Cannot find kind: %d\n", kind);
@@ -2339,6 +2361,7 @@ const char *astKindToHumanReadable(Ast *ast) {
         case AST_PLACEHOLDER: return "placeholder";
         case AST_BINOP: return "binary op";
         case AST_UNOP: return "unary op";
+        case AST_TERNARY: return "ternary expression";
         default: return "unknown AST kind";
     }
 }

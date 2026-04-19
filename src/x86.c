@@ -2025,6 +2025,25 @@ void asmExpression(Cctrl *cc, AoStr *buf, Ast *ast) {
         break;
     }
 
+    case AST_TERNARY: {
+        asmExpression(cc,buf,ast->cond);
+        label_begin = astMakeLabel();
+        label_end = astMakeLabel();
+        aoStrCatPrintf(buf,
+                "test   %%rax, %%rax\n\t"
+                "je     %s\n\t", label_begin->data);
+        asmExpression(cc,buf,ast->then);
+        aoStrCatPrintf(buf,
+                "jmp    %s\n"
+                "%s:\n\t",
+                label_end->data,
+                label_begin->data);
+        asmExpression(cc,buf,ast->els);
+        asmRemovePreviousTab(buf);
+        aoStrCatPrintf(buf, "%s:\n\t", label_end->data);
+        break;
+    }
+
     case AST_JUMP:
          aoStrCatPrintf(buf, "jmp    %s\n\t", ast->jump_label->data);
          break;

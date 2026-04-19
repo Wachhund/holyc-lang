@@ -788,18 +788,21 @@ static int parseGetPriority(Lexeme *tok) {
     case TK_OR_OR:
         return 13;
 
-    case '=':
-    case TK_ADD_EQU: 
-    case TK_SUB_EQU: 
-    case TK_MUL_EQU: 
-    case TK_DIV_EQU: 
-    case TK_MOD_EQU: 
-    case TK_AND_EQU: 
-    case TK_OR_EQU:  
-    case TK_XOR_EQU: 
-    case TK_SHL_EQU: 
-    case TK_SHR_EQU:
+    case '?':
         return 14;
+
+    case '=':
+    case TK_ADD_EQU:
+    case TK_SUB_EQU:
+    case TK_MUL_EQU:
+    case TK_DIV_EQU:
+    case TK_MOD_EQU:
+    case TK_AND_EQU:
+    case TK_OR_EQU:
+    case TK_XOR_EQU:
+    case TK_SHL_EQU:
+    case TK_SHR_EQU:
+        return 15;
 
     default:
         return -1;
@@ -980,6 +983,18 @@ Ast *parseExpr(Cctrl *cc, int prec) {
             LHS = astUnaryOperator(LHS->type->ptr, AST_UN_OP_DEREF, LHS);
             LHS->deref_symbol = TK_ARROW;
             LHS = parseGetClassField(cc, LHS);
+            continue;
+        }
+
+        /* Ternary operator: cond ? then : else */
+        if (tokenPunctIs(tok, '?')) {
+            Ast *then_expr = parseExpr(cc, 16);
+            cctrlTokenExpect(cc, ':');
+            Ast *else_expr = parseExpr(cc, 14);
+            AstType *result_type = then_expr->type;
+            if (!result_type) result_type = else_expr->type;
+            if (!result_type) result_type = ast_int_type;
+            LHS = astTernary(result_type, LHS, then_expr, else_expr);
             continue;
         }
 

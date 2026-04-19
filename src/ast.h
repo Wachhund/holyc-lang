@@ -139,6 +139,7 @@ typedef enum AstKind {
     AST_COMMENT       = 295,
     AST_BINOP         = 296,
     AST_UNOP          = 297,
+    AST_TERNARY       = 298,
 } AstKind;
 
 /* @Cleanup
@@ -472,6 +473,7 @@ AstType *astConvertArray(AstType *ast_type);
 Ast *astClassRef(AstType *type, Ast *cls, char *field_name);
 AstType *astClassType(Map *fields, AoStr *clsname, int size, int is_intrinsic);
 Ast *astCast(Ast *var, AstType *to);
+Ast *astTernary(AstType *type, Ast *cond, Ast *then, Ast *els);
 
 AstType *astGetResultType(AstBinOp op, AstType *a, AstType *b);
 AstType *astTypeCheck(AstType *expected, Ast *ast, AstBinOp op);
