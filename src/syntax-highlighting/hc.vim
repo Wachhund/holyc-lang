@@ -9,11 +9,12 @@ syn keyword cRepeat   while for do
 syn keyword cConstant NULL FALSE TRUE EXIT_FAIL EXIT_OK I64_MIN I64_MAX U64_MAX U8_MAX I8_MAX I8_MIN STDOUT STDERR __BUFSIZ__ STDIN
 syn keyword cOperator public private sizeof
 syn clear cStatement
-syn keyword cCast cast
+syn keyword cCast cast bitcast
 syn keyword cKeyword return continue break goto
 syn keyword cClass class
 
 syn match cAsmKeyword "\<\asm\>"
+syn keyword cAsmKeyword _extern
 hi def link cAsmKeyword Keyword
 hi def link cKeyword Keyword
 hi def link cCast Statement
