@@ -818,9 +818,33 @@ void asmAddr(Cctrl *cc, AoStr *buf, Ast *ast) {
         case AST_CLASS_REF: {
             if (astIsDeref(ast->operand->cls) &&
                     ast->operand->cls->operand->kind) {
-                Ast *lvar = ast->operand->cls->operand;
-                aoStrCatPrintf(buf, "movq   %d(%%rbp), %%rax\n\t", lvar->loff);
+                /* &(ptr->field): load pointer, add field offset */
+                Ast *deref_operand = ast->operand->cls->operand;
+                if (deref_operand->kind == AST_GVAR) {
+                    aoStrCatPrintf(buf, "movq   %s(%%rip), %%rax\n\t",
+                            deref_operand->glabel->data);
+                } else {
+                    aoStrCatPrintf(buf, "movq   %d(%%rbp), %%rax\n\t",
+                            deref_operand->loff);
+                }
                 aoStrCatPrintf(buf,"addq   $%d, %%rax\n\t",ast->operand->type->offset);
+            } else if (ast->operand->cls->kind == AST_LVAR) {
+                /* &(local_struct.field): compute stack addr + field offset */
+                int addr = ast->operand->cls->loff + ast->operand->type->offset;
+                aoStrCatPrintf(buf, "leaq   %d(%%rbp), %%rax\n\t", addr);
+            } else if (ast->operand->cls->kind == AST_GVAR) {
+                /* &(global_struct.field): compute global addr + field offset */
+                aoStrCatPrintf(buf, "leaq   %s(%%rip), %%rax\n\t",
+                        ast->operand->cls->glabel->data);
+                if (ast->operand->type->offset) {
+                    aoStrCatPrintf(buf, "addq   $%d, %%rax\n\t",
+                            ast->operand->type->offset);
+                }
+            } else if (ast->operand->cls->kind == AST_CLASS_REF) {
+                /* &(nested.inner.field): recurse into class ref */
+                asmExpression(cc, buf, ast->operand->cls);
+                aoStrCatPrintf(buf, "addq   $%d, %%rax\n\t",
+                        ast->operand->type->offset);
             } else {
                 loggerPanic("Cannot produce ASM for: %s %s %s\n",
                     astKindToString(ast->operand->cls->kind),
@@ -1758,10 +1782,6 @@ void asmPrepFuncCallArgs(Cctrl *cc, AoStr *buf, Ast *funcall) {
         aoStrCatPrintf(buf, "call    *%%r11\n\t");
     } else {
         asmCall(buf, funcall->fname->data);
-    }
-
-    if (float_cnt) {
-        aoStrCatPrintf(buf, "movl   $%d, %%eax\n\t", float_cnt);
     }
 
     if (stack_cnt) {
